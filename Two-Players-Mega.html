@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Tic Tac Toe</title>
+	<script src="jquery.js"></script>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+
+	<style>
+	body{
+		margin:0;
+		font-family:  "Comic Sans MS", cursive, sans-serif;
+	}
+	.mainbody {
+		text-align:center;
+	}
+
+	.boardButtons {
+		width:28px;
+		height:28px;
+		border:0;
+		margin:2px;
+		color:white;
+		font-family:  "Comic Sans MS", cursive, sans-serif;
+	}
+	.boardButtons:hover {
+		cursor:pointer;
+		background-color:#cccccc;
+	}
+	
+	.winnerText{
+		font-size: 35px;
+		font-weight: 600;
+		text-align:center;
+		min-height:40px;
+	}
+	.winnerTextGraphics {
+		opacity:0;
+	}
+	
+	.menu-options {
+		padding:10px 15px;
+		width:154px;
+		background-color:#5cd65c;
+		border:0;
+		cursor:pointer;
+		color:white;
+		font-size:18px;
+		font-family:  "Comic Sans MS", cursive, sans-serif;
+	}
+	.menu-options:hover {
+		background-color:#4ac65c;
+		color:#f2f2f2;
+	}
+
+
+	.horizontal-line:after{
+		content: "";
+		position: absolute;
+		border-top: 2px dashed #ffffff;
+		width: 28px;
+		margin-left: -19px;
+		margin-top: 7px;
+	}
+
+	.vertical-line:after{
+		content: "";
+		position: absolute;
+		border-top: 2px dashed #ffffff;
+		width: 28px;
+		transform: rotate(90deg);
+		margin-left: -19px;
+		margin-top: 7px;
+	}
+	.left-diagonal-line:after {
+		content: "";
+		position: absolute;
+		border-top: 2px dashed #ffffff;
+		width: 38px;
+		transform: rotate(45deg);
+		margin-left: -24px;
+		margin-top: 7px;
+	}
+	.right-diagonal-line:after {
+		content: "";
+		position: absolute;
+		border-top: 2px dashed #ffffff;
+		width: 38px;
+		transform: rotate(135deg);
+		margin-left: -24px;
+		margin-top: 7px;
+	}
+	
+	.bot-winning-graphics-color {
+		background: radial-gradient(#1fc8db 30%, #2cb5e8 100%);
+	}
+	
+	.player-winning-graphics-color {
+		background:radial-gradient(#59e259 30%, #4bd84b 100%;
+	}
+	
+	
+	</style>
+	
+</head>
+<body>
+<p class="winnerText"></p>
+<div class="mainbody">
+	<div id="board"></div>
+	<br>
+	<span class="menu-options-span">
+		<button class="new-game menu-options">New Game</button>
+		<a href="index.html"><button class="main-menu menu-options">Main Menu</button></a>
+	</span>
+</div>
+<script>
+$(document).ready(function () {
+
+	function getBoard() {
+		var board = [];
+			for (var i = 0; i < boardSize*boardSize; i++)
+				board[i] = i;
+				
+		return board;
+	}
+	
+	function getAvailableMoves() {
+		var availableMoves = [];
+			for (var i = 0; i < boardSize*boardSize; i++)
+				availableMoves[i] = i;
+				
+		return availableMoves;
+	}
+	
+	function getState(board) {
+		var state = "";
+		for (var i = 0; i < boardSize*boardSize; i++)
+			state += board[i];
+				
+		return state;
+	}
+	
+	boardSize = 10;
+	winRow = 5;
+	var board = getBoard();
+	var availableMoves = getAvailableMoves();
+	var state = getState(board);
+	var reward = 0;
+	$("#board").html("");
+	
+
+	function printBoard (board){
+			for (var i = 0; i < boardSize*boardSize; i++)
+			{
+				$("#board").append("<button class='boardButtons btn" + i + "' id='" + i + "'>" + board[i] + "</button>")
+				if ((i+1)%boardSize == 0 )
+					$("#board").append("<br/>")
+			}
+	}
+
+	function updateBoardGUI (buttonId, XorO) {
+			buttonId = "#" + buttonId + ".boardButtons";
+			$(buttonId).html(XorO);
+	}
+		
+
+	function checkResult(board) {
+	
+		function xWon() {
+			$(".winnerText").html("Player One Won"); 
+			$(".winnerText").css("color", "#6ddc5d");
+			return -1
+			
+		}
+		
+		function oWon() {
+			$(".winnerText").html("Player Two Won");
+			$(".winnerText").css("color", "#5ec7ed");		
+			return 1;
+		}
+
+		
+		function winningGraphics(typeOfWin, backgroundColor) {
+		
+		setInterval(function(){
+				if (typeOfWin == "Horizontal")
+				{
+					for(var j = 0; j < 5; j++)
+						$(".btn" + (i - j)).toggleClass("horizontal-line " + backgroundColor);
+				}
+				else if (typeOfWin == "Vertical")
+				{
+					for(var j = 0; j < 5; j++)
+						$(".btn" + (i - j*boardSize)).toggleClass("vertical-line " + backgroundColor);
+				}
+				else if (typeOfWin == "LeftDiagonal")
+				{
+					for(var j = 0; j < 5; j++)
+						$(".btn" + (i - j*boardSize - j)).toggleClass("left-diagonal-line " + backgroundColor);
+				}
+				else if (typeOfWin == "RightDiagonal")
+				{
+					for(var j = 0; j < 5; j++)
+						$(".btn" + (i - j*boardSize + j)).toggleClass("right-diagonal-line " + backgroundColor);
+				}
+				
+				
+			}, 100);
+		
+		}
+		
+		// HORIZONTAL WIN CHECK
+		horizontalWinX = 0;
+		horizontalWinO = 0;
+		var isDraw = 1;
+		for (var i = 0; i < boardSize*boardSize; i++)
+		{
+			if (i%10 == 0)
+			{
+				horizontalWinX = 0;
+				horizontalWinO = 0;
+			}
+				
+			if (board[i] == "X")
+			{
+				horizontalWinX++;
+				horizontalWinO = 0;
+			}
+			else if (board[i] == "O")
+			{
+				horizontalWinX = 0;
+				horizontalWinO++;
+			}
+			else
+			{
+				isDraw = 0;
+				horizontalWinX = 0;
+				horizontalWinO = 0;
+			}
+			
+				
+			if (horizontalWinX == winRow)
+			{
+				winningGraphics("Horizontal", "player-winning-graphics-color");
+				return xWon();
+			}
+			else if (horizontalWinO == winRow)
+			{	
+				winningGraphics("Horizontal", "bot-winning-graphics-color"); 
+				return oWon();
+			}
+		
+		}
+		
+		// Check if Draw 
+		if (isDraw == 1)
+		{
+			$(".winnerText").html("<span style='color:#5ec7ed'>Dr</span><span style='color:#6ddc5d'>aw!</span>"); 
+			setInterval(function(){
+				$(".winnerText").toggleClass("winnerTextGraphics");	
+			}, 300);
+			return  0.5; 
+		}
+		
+		// Vertical Win Check
+		for (var i = 0; i < boardSize; i++)
+		{
+			verticalWinX = 0;
+			verticalWinO = 0;
+		    for (var j = i; j < boardSize*boardSize; j = j + boardSize)
+			{
+				if (board[j] == "X")
+				{
+					verticalWinX++;
+					verticalWinO = 0;
+				}
+				else if (board[j] == "O")
+				{
+					verticalWinX = 0;
+					verticalWinO++;
+				}
+				else 
+				{
+					verticalWinX = 0;
+					verticalWinO = 0;
+				}
+				
+				if (verticalWinX == winRow)
+				{
+					i = j; // Winning Graphics function need the value of i 
+					winningGraphics("Vertical", "player-winning-graphics-color");
+					return xWon();
+				}
+				else if (verticalWinO == winRow)
+				{
+					i = j; // Winning Graphics function need the value of i 
+					winningGraphics("Vertical", "bot-winning-graphics-color");
+					return oWon();
+				}
+				
+			}
+		}
+	
+	
+		//Diagonal Left To Right
+		for (var k = 0; k < 56; k = k + 10)
+		{
+			if (k == 0)
+				var nextLoopLimit = 6;
+			else 
+				var nextLoopLimit = k + 1;
+			
+			
+		for (var i = k; i < nextLoopLimit; i++)
+		{
+				
+				
+			verticalLeftToRightWinX = 0;
+			verticalLeftToRightWinO = 0;
+		
+			isWinPossibleFromThisPointHorizontal = i%10;
+			isWinPossibleFromThisPointVertical = i-isWinPossibleFromThisPointHorizontal;
+			if (isWinPossibleFromThisPointHorizontal == 6)
+				i = isWinPossibleFromThisPointVertical + boardSize;
+		
+					
+			if (i > 56)
+				break;
+			for (var j = i; j < boardSize*boardSize; j = j + boardSize + 1)
+			{ 
+				if (board[j] == "X")
+				{
+					verticalLeftToRightWinX++;
+					verticalLeftToRightWinO = 0;
+				}
+				else if (board[j] == "O")
+				{
+					verticalLeftToRightWinX = 0;
+					verticalLeftToRightWinO++;
+				}
+				else 
+				{
+					verticalLeftToRightWinX = 0;
+					verticalLeftToRightWinO = 0;
+				}
+				
+				if (verticalLeftToRightWinX == winRow)
+				{
+					i = j; // Winning Graphics function need the value of i 
+					winningGraphics("LeftDiagonal", "player-winning-graphics-color");
+					return xWon();
+				}
+				else if (verticalLeftToRightWinO == winRow)
+				{
+					i = j; // Winning Graphics function need the value of i 
+					winningGraphics("LeftDiagonal", "bot-winning-graphics-color");
+					return oWon();
+				}
+				
+				if ((j+1)%10 == 0)
+					break;
+				
+			}
+			
+		}
+		}
+		// Diagonal Right To Left
+		for (var k = 9; k < 60; k = k + 10)
+		{
+			if (k == 9)
+				var nextLoopLimit = 3;
+			else 
+				var nextLoopLimit = k - 1;
+			
+		for (var i = k; i > nextLoopLimit; i--)
+		{
+			verticalRightToLeftWinX = 0;
+			verticalRightToLeftWinO = 0;
+		
+			isWinPossibleFromThisPointHorizontal = i%10;
+			isWinPossibleFromThisPointVertical = i-isWinPossibleFromThisPointHorizontal;
+			if (isWinPossibleFromThisPointHorizontal == 3)
+				i = isWinPossibleFromThisPointVertical + boardSize + 9;
+		
+			if (i > 59)
+				break;
+
+			for (var j = i; j < boardSize*boardSize; j = j + boardSize - 1)
+			{
+				if (board[j] == "X")
+				{
+					verticalRightToLeftWinX++;
+					verticalRightToLeftWinO = 0;
+				}
+				else if (board[j] == "O")
+				{
+					verticalRightToLeftWinX = 0;
+					verticalRightToLeftWinO++;
+				}
+				else 
+				{
+					verticalRightToLeftWinX = 0;
+					verticalRightToLeftWinO = 0;
+				}
+				
+				if (verticalRightToLeftWinX == winRow)
+				{
+					i = j; // Winning Graphics function need the value of i 
+					winningGraphics("RightDiagonal", "player-winning-graphics-color");
+					return xWon();
+				}
+				else if (verticalRightToLeftWinO == winRow)
+				{
+					i = j; // Winning Graphics function need the value of i 
+					winningGraphics("RightDiagonal", "bot-winning-graphics-color");
+					return oWon();
+				}
+				if (j%10 == 0)
+					break;
+			}
+			
+		}		
+		}
+		return 0;
+	}
+	
+	printBoard(board);
+
+	$(".boardButtons").click(function(){
+		if (checkResult(board) == 0) // #If result is False, second player makes the move
+		{
+			var move = Number($(this).attr('id'));
+		
+			if (availableMoves.length%2 == 1)			
+			{	
+				board[move] = "X";
+				updateBoardGUI(move, "X");
+				$("#" + move + ".boardButtons").css("background-color", "#6ddc5d").attr("disabled", "disabled");;
+
+			}				
+			else 
+			{
+				board[move] = "O";
+				updateBoardGUI(move, "O");
+				$("#" + move + ".boardButtons").css("background-color", "#5ec7ed").attr("disabled", "disabled");;
+			}		
+			
+			availableMoves.splice(availableMoves.indexOf(Number(move)),1);
+			checkResult(board);
+			console.log(board);
+		}
+
+
+		
+		
+				
+	});	
+
+	  
+});
+
+$(".new-game").click(function () {
+	location.reload();
+
+
+});
+</script>
+</body>
+</html>
